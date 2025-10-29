@@ -65,6 +65,30 @@
             background: #cccccc;
             transform: translateY(-2px);
         }
+        .filter-section {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        .filter-btn {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .filter-btn.active {
+            background: #ffffff;
+            color: #000000;
+            border-color: #ffffff;
+        }
         #taskList {
             list-style: none;
         }
@@ -88,6 +112,9 @@
         }
         .task-item.completed .task-text {
             text-decoration: line-through;
+        }
+        .task-item.hidden {
+            display: none;
         }
         input[type="checkbox"] {
             width: 20px;
@@ -119,26 +146,43 @@
             <input type="text" id="taskInput" placeholder="Add a new task...">
             <button id="addBtn">Add</button>
         </div>
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">All</button>
+            <button class="filter-btn" data-filter="active">Active</button>
+            <button class="filter-btn" data-filter="completed">Completed</button>
+        </div>
         <ul id="taskList"></ul>
     </div>
-
     <script>
         const taskInput = document.getElementById('taskInput');
         const addBtn = document.getElementById('addBtn');
         const taskList = document.getElementById('taskList');
-
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        let currentFilter = 'all';
+        
         // Load tasks from localStorage
         let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
-
+        
         function saveTasks() {
             localStorage.setItem('tasks', JSON.stringify(tasks));
         }
-
+        
         function renderTasks() {
             taskList.innerHTML = '';
             tasks.forEach((task, index) => {
                 const li = document.createElement('li');
-                li.className = `task-item ${task.completed ? 'completed' : ''}`;
+                li.className = 'task-item';
+                
+                if (task.completed) {
+                    li.classList.add('completed');
+                }
+                
+                // Apply filter
+                if (currentFilter === 'active' && task.completed) {
+                    li.classList.add('hidden');
+                } else if (currentFilter === 'completed' && !task.completed) {
+                    li.classList.add('hidden');
+                }
                 
                 li.innerHTML = `
                     <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${index})">
@@ -149,7 +193,7 @@
                 taskList.appendChild(li);
             });
         }
-
+        
         function addTask() {
             const text = taskInput.value.trim();
             if (text) {
@@ -159,24 +203,40 @@
                 taskInput.value = '';
             }
         }
-
+        
         function toggleTask(index) {
             tasks[index].completed = !tasks[index].completed;
             saveTasks();
             renderTasks();
         }
-
+        
         function deleteTask(index) {
             tasks.splice(index, 1);
             saveTasks();
             renderTasks();
         }
-
+        
+        function setFilter(filter) {
+            currentFilter = filter;
+            filterBtns.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                }
+            });
+            renderTasks();
+        }
+        
+        // Event listeners
         addBtn.addEventListener('click', addTask);
         taskInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addTask();
         });
-
+        
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => setFilter(btn.dataset.filter));
+        });
+        
         // Initial render
         renderTasks();
     </script>
